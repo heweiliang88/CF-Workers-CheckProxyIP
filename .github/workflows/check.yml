@@ -35,6 +35,7 @@ jobs:
           # 检查 result.txt 是否存在或有变化
           if [ -f "result.txt" ]; then
             git add result.txt
+            git add proxy.txt
             # 如果没有变化，commit 会失败，所以加 || true
             git commit -m "Update proxy check results [skip ci]" || echo "No changes to commit"
             git push
