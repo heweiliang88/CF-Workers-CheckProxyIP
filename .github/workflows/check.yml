@@ -1,0 +1,44 @@
+name: Check Proxy IPs
+
+on:
+  workflow_dispatch: # 允许手动运行
+  schedule:
+    - cron: '0 2 * * *' # 每天凌晨 2 点自动运行 (UTC时间)
+  push:
+    paths:
+      - 'domain.txt' # 当 domain.txt 更新时自动运行
+
+jobs:
+  check-and-save:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write # 需要写入权限来提交 result.txt
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run Check Script
+        run: node check_proxy.js
+
+      - name: Commit and Push Results
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 检查 result.txt 是否存在或有变化
+          if [ -f "result.txt" ]; then
+            git add result.txt
+            # 如果没有变化，commit 会失败，所以加 || true
+            git commit -m "Update proxy check results [skip ci]" || echo "No changes to commit"
+            git push
+          else
+            echo "Result file not found!"
+          fi
+
