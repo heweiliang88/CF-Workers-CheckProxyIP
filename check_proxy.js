@@ -1,13 +1,14 @@
-// check_proxy.js
 const fs = require('fs');
 const dns = require('dns').promises;
 const tls = require('tls');
 const https = require('https');
+const http = require('http'); // Added http
 const path = require('path');
 
 // 配置
 const INPUT_FILE = 'domain.txt';
 const OUTPUT_FILE = 'result.txt';
+const PROXY_FILE = 'proxy.txt'; // New output file
 const CONCURRENCY = 20; // 并发数
 const TIMEOUT = 3000; // 超时时间 ms
 
@@ -17,7 +18,8 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // 获取 IP 信息 (使用 ip-api.com)
 async function getIpInfo(ip) {
     return new Promise((resolve) => {
-        const req = https.get(`https://ip-api.com/json/${ip}?lang=zh-CN`, (res) => {
+        // Use http instead of https for free tier of ip-api.com
+        const req = http.get(`http://ip-api.com/json/${ip}?lang=zh-CN`, (res) => {
             let data = '';
             res.on('data', (chunk) => data += chunk);
             res.on('end', () => {
@@ -148,13 +150,19 @@ async function main() {
             if (checkResult.success) {
                 // 如果连通，再查地理位置 (避免浪费 API 调用)
                 // 注意：ip-api.com 免费版有 45次/分 的限制，这里加一点随机延迟
-                await sleep(Math.random() * 1000); 
+                await sleep(Math.random() * 2000); // Increased delay slightly to be safe
                 const country = await getIpInfo(target.ip);
                 
                 // 格式：ip#国家 延迟
                 const line = `${target.ip}#${country} ${checkResult.latency}ms`;
                 console.log(`[成功] ${line}`);
-                return line;
+                
+                // Return object for sorting
+                return {
+                    line: line,
+                    ip: target.ip,
+                    latency: checkResult.latency
+                };
             } else {
                 // console.log(`[失败] ${target.ip}: ${checkResult.error}`);
                 return null;
@@ -165,10 +173,15 @@ async function main() {
         results.push(...chunkResults.filter(r => r !== null));
     }
 
+    // Sort results by latency (ascending)
+    results.sort((a, b) => a.latency - b.latency);
+
     // 4. 写入结果
     try {
-        fs.writeFileSync(path.join(__dirname, OUTPUT_FILE), results.join('\n'));
+        fs.writeFileSync(path.join(__dirname, OUTPUT_FILE), results.map(r => r.line).join('\n'));
+        fs.writeFileSync(path.join(__dirname, PROXY_FILE), results.map(r => r.ip).join('\n'));
         console.log(`\n检测完成，结果已保存至 ${OUTPUT_FILE}`);
+        console.log(`纯 IP 列表已保存至 ${PROXY_FILE}`);
         console.log(`共保留有效 IP: ${results.length} 个`);
     } catch (e) {
         console.error(`写入文件失败: ${e.message}`);
