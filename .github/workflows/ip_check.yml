@@ -1,0 +1,46 @@
+name: IP Location Lookup
+
+on:
+  push:
+    paths:
+      - 'proxy.txt'  # 只有当 proxy.txt 发生变化时才触发
+  workflow_dispatch: # 允许手动点击按钮触发
+
+permissions:
+  contents: write    # 赋予写权限，以便提交生成的 csv 文件
+
+jobs:
+  lookup-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run IP Lookup Script
+        run: python ip_lookup.py
+
+      - name: Commit and Push CSV
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 检查是否有文件变化
+          if [ -f "proxy.csv" ]; then
+            git add proxy.csv
+            # 只有当 proxy.csv 内容真的改变了才提交，避免报错
+            git commit -m "Update proxy.csv with IP location data [skip ci]" || echo "No changes to commit"
+            git push
+          else
+            echo "proxy.csv was not generated."
+          fi
