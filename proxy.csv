@@ -1,5 +1,4 @@
 ﻿addr,country,province,city,isp
-34.120.54.55,CLOUD.GOOGLE.COM,CLOUD.GOOGLE.COM,,cloud.google.com
 34.92.187.216,中国,香港,,cloud.google.com
 35.182.226.236,加拿大,魁北克省,蒙特利尔,amazon.com
 40.177.65.8,加拿大,艾伯塔省,卡尔加里,amazon.com
@@ -134,3 +133,4 @@
 146.56.102.118,韩国,江原道,春川市,oracle.com
 146.56.191.136,韩国,首尔,,oracle.com
 129.154.50.159,韩国,江原道,春川市,oracle.com
+
